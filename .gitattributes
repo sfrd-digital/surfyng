@@ -1,0 +1,22 @@
+# Normaliza finais de linha: LF no repositorio, checkout automatico por OS
+* text=auto
+
+# Scripts shell SEMPRE com LF (rodam no Linux/VPS)
+*.sh text eol=lf
+
+# Arquivos binarios — sem conversao
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
+*.apk binary
+*.aab binary
+*.ipa binary
+*.xlsx binary
+*.docx binary
+*.pptx binary

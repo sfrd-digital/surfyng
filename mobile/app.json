@@ -1,0 +1,69 @@
+{
+  "expo": {
+    "name": "Surfyng",
+    "slug": "surfyng",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "surfyng",
+    "userInterfaceStyle": "dark",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#041E2C"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "bundleIdentifier": "com.surfyng.app",
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "O Surfyng usa sua localização para encontrar as praias mais próximas com as melhores condições de surf agora.",
+        "NSLocationAlwaysUsageDescription": "O Surfyng usa sua localização para alertas em segundo plano.",
+        "NSCameraUsageDescription": "Para tirar fotos das suas sessões de surf.",
+        "NSPhotoLibraryUsageDescription": "Para selecionar fotos das suas sessões de surf."
+      }
+    },
+    "android": {
+      "package": "com.surfyng.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#041E2C"
+      },
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA",
+        "READ_MEDIA_IMAGES",
+        "POST_NOTIFICATIONS"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-location",
+      "expo-camera",
+      "expo-image-picker",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#22D3EE"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": { "useFrameworks": "static" },
+          "android": { "compileSdkVersion": 34 }
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

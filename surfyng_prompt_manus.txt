@@ -1,0 +1,494 @@
+PROMPT MANUS — SURFYNG APP
+Versão completa para colar no Manus e iniciar o desenvolvimento
+================================================================================
+
+PROMPT PRINCIPAL (colar no Manus para começar):
+
+---
+
+Quero que você construa um aplicativo mobile chamado SURFYNG — um app de surf que indica a melhor praia para surfar agora, baseado na localização GPS do usuário + condições de vento e ondulação em tempo real.
+
+Você vai criar:
+1. App mobile React Native com Expo (iOS + Android)
+2. Backend Node.js + Express com API REST
+3. Banco de dados PostgreSQL
+4. Cache Redis (condições meteorológicas)
+5. Deploy no VPS Hostinger (Ubuntu 22.04)
+
+---
+
+STACK TÉCNICA OBRIGATÓRIA:
+- Frontend mobile: React Native + Expo SDK 51+
+- Backend: Node.js 20 + Express 4
+- Banco de dados: PostgreSQL 15
+- Cache: Redis 7
+- Autenticação: Firebase Authentication (Google + Apple + Facebook login)
+- Notificações push: Firebase Cloud Messaging (FCM)
+- Pagamento: Stripe (modelo app-to-web via Stripe Checkout — sem IAP nativo)
+- Hospedagem backend: VPS Hostinger (Ubuntu 22.04, Nginx, PM2)
+- Mapas: React Native Maps + Google Maps SDK
+- HTTP client: Axios
+
+---
+
+CONCEITO DO APP:
+
+O Surfyng resolve um problema real: surfistas (especialmente iniciantes) não sabem interpretar sites de previsão de ondas. O app usa GPS + API do Windguru para buscar condições em tempo real e indica, de forma simples, a praia mais próxima com as melhores condições para o nível do surfista.
+
+Fluxo principal:
+1. Usuário abre o app
+2. GPS captura localização atual
+3. Backend busca praias num raio de 50km (banco de dados)
+4. Para cada praia, busca condições via Windguru API (cache Redis 30min)
+5. Algoritmo calcula score 0-10 por praia
+6. App exibe: praia indicada + distância + condições + temperatura da água + roupa recomendada
+
+---
+
+BANCO DE DADOS — TABELAS PRINCIPAIS:
+
+Tabela users:
+- id UUID PRIMARY KEY
+- firebase_uid VARCHAR UNIQUE NOT NULL
+- name VARCHAR(100)
+- email VARCHAR(255) UNIQUE
+- photo_url TEXT
+- level VARCHAR(20) DEFAULT 'beginner' -- beginner, intermediate, advanced
+- cold_tolerance VARCHAR(20) DEFAULT 'normal' -- sensitive, normal, resistant
+- plan VARCHAR(20) DEFAULT 'free' -- free, pro, global
+- stripe_customer_id VARCHAR(100)
+- base_lat DECIMAL(10,8)
+- base_lng DECIMAL(11,8)
+- city VARCHAR(100)
+- push_token TEXT
+- language VARCHAR(5) DEFAULT 'pt'
+- created_at TIMESTAMP DEFAULT NOW()
+
+Tabela beaches:
+- id UUID PRIMARY KEY
+- name VARCHAR(100) NOT NULL
+- city VARCHAR(100)
+- state VARCHAR(5)
+- country VARCHAR(5) DEFAULT 'BR'
+- lat DECIMAL(10,8) NOT NULL
+- lng DECIMAL(11,8) NOT NULL
+- swell_directions TEXT[] -- ex: {SE, NE}
+- wind_directions TEXT[] -- ex: {NE, Oeste}
+- min_size_feet INTEGER
+- max_size_feet INTEGER
+- difficulty VARCHAR(20) -- low, medium_low, medium, medium_high, high
+- best_season VARCHAR(100)
+- consistency VARCHAR(10) -- low, medium, high
+- crowd VARCHAR(10) -- low, medium, intense
+- windguru_station_id INTEGER
+- water_temp_summer_c DECIMAL(4,1)
+- water_temp_winter_c DECIMAL(4,1)
+- description TEXT
+- created_at TIMESTAMP DEFAULT NOW()
+
+Tabela conditions_cache:
+- id UUID PRIMARY KEY
+- beach_id UUID REFERENCES beaches(id)
+- wind_speed DECIMAL(5,1)
+- wind_direction VARCHAR(20)
+- swell_height DECIMAL(4,2)
+- swell_direction VARCHAR(20)
+- swell_period INTEGER
+- water_temp_c DECIMAL(4,1)
+- air_temp_c DECIMAL(4,1)
+- wetsuit_recommendation VARCHAR(30)
+- score DECIMAL(3,1)
+- fetched_at TIMESTAMP DEFAULT NOW()
+- expires_at TIMESTAMP
+
+Tabela favorite_beaches:
+- id UUID PRIMARY KEY
+- user_id UUID REFERENCES users(id)
+- beach_id UUID REFERENCES beaches(id)
+- created_at TIMESTAMP DEFAULT NOW()
+
+Tabela posts:
+- id UUID PRIMARY KEY
+- user_id UUID REFERENCES users(id)
+- beach_id UUID REFERENCES beaches(id)
+- rating INTEGER CHECK (rating >= 1 AND rating <= 5)
+- text TEXT
+- photos TEXT[]
+- conditions_snapshot JSONB
+- likes_count INTEGER DEFAULT 0
+- created_at TIMESTAMP DEFAULT NOW()
+
+Tabela subscriptions:
+- id UUID PRIMARY KEY
+- user_id UUID REFERENCES users(id)
+- plan VARCHAR(20)
+- stripe_subscription_id VARCHAR(100)
+- stripe_checkout_session_id VARCHAR(100)
+- status VARCHAR(20) DEFAULT 'active'
+- started_at TIMESTAMP DEFAULT NOW()
+- ends_at TIMESTAMP
+
+Tabela alert_preferences:
+- id UUID PRIMARY KEY
+- user_id UUID REFERENCES users(id)
+- beach_id UUID REFERENCES beaches(id)
+- min_score DECIMAL(3,1) DEFAULT 8.0
+- active BOOLEAN DEFAULT TRUE
+- created_at TIMESTAMP DEFAULT NOW()
+
+---
+
+ALGORITMO DE MATCHING (lógica central do app):
+
+function calculateScore(beach, conditions):
+  score = 0
+
+  // Vento (4 pontos)
+  if conditions.wind_direction in beach.wind_directions:
+    score += 4.0
+  else if conditions.wind_direction is adjacent to beach.wind_directions:
+    score += 2.0
+
+  // Ondulação (4 pontos)
+  if conditions.swell_direction in beach.swell_directions:
+    score += 4.0
+  else if conditions.swell_direction is adjacent:
+    score += 2.0
+
+  // Tamanho (2 pontos)
+  wave_feet = conditions.swell_height * 3.28
+  if wave_feet >= beach.min_size_feet AND wave_feet <= beach.max_size_feet:
+    score += 2.0
+  else if wave_feet >= beach.min_size_feet * 0.7:
+    score += 1.0
+
+  // Bônus período
+  if conditions.swell_period >= 10:
+    score += 0.5
+  else if conditions.swell_period >= 8:
+    score += 0.3
+
+  return min(score, 10.0)
+
+Filtro por nível do usuário:
+- beginner: dificuldade low ou medium_low
+- intermediate: dificuldade low, medium_low ou medium
+- advanced: todas as dificuldades
+
+Ordenação final: score DESC, distância ASC
+
+---
+
+ROUPA RECOMENDADA (por temperatura da água + tolerância ao frio):
+
+sensitive:
+  > 26°C → Lycra
+  22-26°C → Shorty
+  18-22°C → Wetsuit 2/2mm
+  14-18°C → Wetsuit 3/2mm
+  < 14°C → Wetsuit 4/3mm
+
+normal:
+  > 24°C → Lycra
+  20-24°C → Shorty
+  16-20°C → Wetsuit 3/2mm
+  < 16°C → Wetsuit 4/3mm
+
+resistant:
+  > 22°C → Lycra
+  18-22°C → Shorty
+  14-18°C → Wetsuit 3/2mm
+  < 14°C → Wetsuit 4/3mm
+
+---
+
+ENDPOINTS DA API (implementar todos):
+
+AUTH:
+POST /api/v1/auth/verify — verifica token Firebase, cria usuário se novo
+
+USERS:
+GET  /api/v1/users/me — perfil completo
+PUT  /api/v1/users/me — atualizar perfil
+POST /api/v1/users/me/favorites/:beach_id — adicionar favorita
+DELETE /api/v1/users/me/favorites/:beach_id — remover favorita
+
+BEACHES:
+GET /api/v1/beaches/recommend?lat=X&lng=Y&radius=50 — INDICAÇÃO PRINCIPAL
+GET /api/v1/beaches/nearby?lat=X&lng=Y — lista com scores
+GET /api/v1/beaches/:id — detalhe da praia
+GET /api/v1/beaches/:id/conditions — condições em tempo real
+
+POSTS:
+GET    /api/v1/posts?beach_id=X&date=Y — feed
+POST   /api/v1/posts — criar post com foto
+POST   /api/v1/posts/:id/like — curtir
+DELETE /api/v1/posts/:id — deletar
+
+NOTIFICATIONS:
+GET /api/v1/notifications — listar
+PUT /api/v1/notifications/:id/read — marcar lida
+PUT /api/v1/notifications/read-all — marcar todas
+GET /api/v1/notifications/preferences — alertas configurados
+POST /api/v1/notifications/preferences — criar alerta
+DELETE /api/v1/notifications/preferences/:id — remover alerta
+
+SUBSCRIPTIONS (Stripe app-to-web):
+GET  /api/v1/subscriptions/current — plano ativo
+POST /api/v1/subscriptions/checkout — criar sessão Stripe Checkout
+POST /api/v1/subscriptions/portal — portal do cliente Stripe
+POST /api/v1/webhooks/stripe — webhook Stripe (sem auth JWT)
+
+---
+
+INTEGRAÇÃO WINDGURU:
+
+URL base: https://www.windguru.cz/int/iapi.php
+Parâmetros: uid={station_id}&q=forecast&format=json
+
+Dados a extrair da resposta:
+- WINDSPD (velocidade do vento em nós)
+- WINDDIRNAME (direção do vento)
+- SHWW (altura da ondulação em metros)
+- DIRPW (direção da ondulação)
+- PERPW (período da ondulação em segundos)
+- TMP (temperatura do ar)
+- SST (temperatura da superfície do mar — se disponível)
+
+Cache no Redis: 30 minutos por estação
+
+Fallback: se Windguru indisponível, usar último cache válido ou exibir mensagem de manutenção
+
+---
+
+PAGAMENTO — STRIPE APP-TO-WEB:
+
+Modelo: o usuário clica em "Assinar Pro" no app → app abre browser com URL do Stripe Checkout → usuário paga → Stripe redireciona para deeplink do app → app verifica assinatura ativa via backend
+
+Implementar:
+1. POST /api/v1/subscriptions/checkout
+   - Criar ou recuperar stripe_customer_id
+   - Criar sessão de checkout com price_id correto
+   - success_url: surfyng://payment-success (deeplink)
+   - cancel_url: surfyng://payment-cancel (deeplink)
+   - Retornar URL do checkout
+
+2. Webhook POST /api/v1/webhooks/stripe
+   - checkout.session.completed → atualizar plano do usuário
+   - customer.subscription.updated → sincronizar status
+   - customer.subscription.deleted → rebaixar para free
+   - invoice.payment_failed → notificar usuário
+
+3. No app React Native:
+   - Usar Linking.openURL(checkoutUrl) para abrir o browser
+   - Configurar deep link surfyng:// para capturar retorno
+   - Ao retornar, chamar GET /subscriptions/current para confirmar
+
+Produtos Stripe a criar:
+- surfyng_pro_monthly: R$ 19,90/mês (Price ID: configurar no .env)
+- surfyng_global_monthly: R$ 39,90/mês (Price ID: configurar no .env)
+
+---
+
+TELAS DO APP (React Native + Expo):
+
+1. SplashScreen — logo animado, carrega configurações
+2. OnboardingScreen — 3 slides explicando o app (AsyncStorage para não mostrar de novo)
+3. LoginScreen — botões Google, Apple, Facebook via Firebase Auth
+4. ProfileSetupScreen — escolher nível (beginner/intermediate/advanced) + tolerância ao frio
+5. HomeScreen — TELA PRINCIPAL:
+   - Localização atual (endereço reverso via Google Geocoding)
+   - Card principal: praia indicada + score + condições + distância + roupa
+   - Lista de alternativas
+   - Botão "Como chegar" → abre Google Maps
+6. MapScreen — mapa com pins coloridos (verde/amarelo/vermelho por score)
+7. BeachDetailScreen — ficha completa + bússola + condições + avaliações + botão ir
+8. FeedScreen — posts da comunidade filtrados por praia
+9. CreatePostScreen — foto + avaliação + texto
+10. NotificationsScreen — alertas + configurar preferências
+11. PlansScreen — comparar planos + botão assinar (abre Stripe Checkout)
+12. ProfileScreen — editar perfil, nível, tolerância, idioma, sair
+
+---
+
+IDENTIDADE VISUAL DO APP:
+
+Paleta de cores:
+- Background principal: #041E2C (azul muito escuro)
+- Background cards: #062736
+- Primária: #0A4F6E (azul oceano)
+- Destaque: #22D3EE (ciano)
+- Sucesso/condição ideal: #059669 (verde)
+- Aviso: #D97706 (âmbar)
+- Texto principal: #F0F9FF
+- Texto secundário: rgba(240,249,255,0.55)
+
+Fontes:
+- Títulos: font-weight bold, tamanhos grandes
+- Corpo: peso normal
+- Dados técnicos (scores, temperaturas): monospace
+
+Estilo: dark mode como padrão, glassmorphism nos cards, ícones lineares
+
+---
+
+VARIÁVEIS DE AMBIENTE (.env):
+
+# App
+NODE_ENV=production
+PORT=3000
+
+# Database
+DATABASE_URL=postgresql://surfyng_user:SENHA@localhost:5432/surfyng_db
+
+# Redis
+REDIS_URL=redis://localhost:6379
+
+# Firebase
+FIREBASE_PROJECT_ID=surfyng-app
+FIREBASE_CLIENT_EMAIL=firebase-adminsdk@surfyng-app.iam.gserviceaccount.com
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+
+# Stripe
+STRIPE_SECRET_KEY=sk_live_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_PRO_PRICE_ID=price_...
+STRIPE_GLOBAL_PRICE_ID=price_...
+
+# Windguru
+WINDGURU_API_KEY=...
+
+# Google Maps (para geocoding)
+GOOGLE_MAPS_API_KEY=...
+
+# App deeplink
+APP_SCHEME=surfyng
+
+---
+
+CONFIGURAÇÃO HOSTINGER VPS (Ubuntu 22.04):
+
+1. Instalar Node.js 20, PostgreSQL 15, Redis 7, Nginx, PM2, Certbot
+2. Criar usuário surfyng sem sudo para rodar a app
+3. Configurar PostgreSQL:
+   - CREATE DATABASE surfyng_db;
+   - CREATE USER surfyng_user WITH PASSWORD '...';
+   - GRANT ALL ON DATABASE surfyng_db TO surfyng_user;
+4. Rodar migrations para criar todas as tabelas
+5. Inserir dados iniciais: 121 praias do banco (CSV disponível)
+6. Configurar PM2 para manter o app rodando:
+   - pm2 start ecosystem.config.js
+   - pm2 startup
+   - pm2 save
+7. Configurar Nginx como reverse proxy:
+   - api.surfyng.com → localhost:3000
+8. SSL com Certbot (Let's Encrypt):
+   - certbot --nginx -d api.surfyng.com
+
+---
+
+EXPO — CONFIGURAÇÃO APP.JSON:
+
+{
+  "expo": {
+    "name": "Surfyng",
+    "slug": "surfyng",
+    "version": "1.0.0",
+    "scheme": "surfyng",
+    "platforms": ["ios", "android"],
+    "ios": {
+      "bundleIdentifier": "com.surfyng.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "O Surfyng usa sua localização para encontrar as praias mais próximas com as melhores condições de surf agora.",
+        "NSCameraUsageDescription": "Para tirar fotos das suas sessões de surf.",
+        "NSPhotoLibraryUsageDescription": "Para selecionar fotos das suas sessões de surf."
+      }
+    },
+    "android": {
+      "package": "com.surfyng.app",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA",
+        "READ_MEDIA_IMAGES",
+        "POST_NOTIFICATIONS"
+      ]
+    },
+    "plugins": [
+      "expo-location",
+      "expo-camera",
+      "expo-image-picker",
+      "expo-notifications"
+    ]
+  }
+}
+
+---
+
+ORDEM DE DESENVOLVIMENTO (implementar nesta sequência):
+
+Fase 1 — Backend base:
+1. Setup Node.js + Express + PostgreSQL + Redis
+2. Migrations — criar todas as tabelas
+3. Autenticação Firebase (middleware JWT)
+4. CRUD de usuários (POST /auth/verify, GET/PUT /users/me)
+5. Seed do banco de praias (inserir as 121 praias)
+
+Fase 2 — Lógica principal:
+6. Integração Windguru API + cache Redis
+7. Algoritmo de matching (GET /beaches/recommend)
+8. GET /beaches/nearby + GET /beaches/:id/conditions
+9. Cálculo de roupa por temperatura + tolerância
+
+Fase 3 — App mobile telas core:
+10. Expo setup + navegação (Expo Router)
+11. SplashScreen + OnboardingScreen
+12. LoginScreen (Firebase Auth — Google + Apple + Facebook)
+13. ProfileSetupScreen
+14. HomeScreen (tela principal com indicação)
+15. MapScreen (mapa com pins)
+16. BeachDetailScreen
+
+Fase 4 — Funcionalidades sociais:
+17. FeedScreen + CreatePostScreen
+18. NotificationsScreen + alert preferences
+19. POST /posts + likes
+
+Fase 5 — Pagamento + assinatura:
+20. Stripe Checkout (POST /subscriptions/checkout)
+21. Webhook Stripe (POST /webhooks/stripe)
+22. PlansScreen com botão assinar
+23. Deep link surfyng:// para retorno do Stripe
+
+Fase 6 — Deploy:
+24. Configurar VPS Hostinger (scripts de setup)
+25. Nginx + PM2 + SSL
+26. EAS Build para gerar .ipa (iOS) e .aab (Android)
+
+---
+
+DADOS INICIAIS — PRIMEIRAS 5 PRAIAS (seed para testar):
+
+INSERT INTO beaches (name, city, state, lat, lng, swell_directions, wind_directions, min_size_feet, max_size_feet, difficulty, consistency, crowd, windguru_station_id, water_temp_summer_c, water_temp_winter_c) VALUES
+('Praia da Joaquina', 'Florianopolis', 'SC', -27.6418, -48.4577, ARRAY['SE','NE'], ARRAY['NE','Oeste'], 1, 11, 'medium_low', 'high', 'intense', 64, 22.0, 14.0),
+('Praia Mole', 'Florianopolis', 'SC', -27.5989, -48.4321, ARRAY['SE','NE'], ARRAY['NE','Oeste'], 1, 11, 'medium_low', 'high', 'intense', 64, 22.0, 14.0),
+('Praia dos Ingleses', 'Florianopolis', 'SC', -27.4336, -48.3928, ARRAY['NE','Leste'], ARRAY['Sul','SW'], 1, 6, 'low', 'high', 'intense', 64, 24.0, 16.0),
+('Praia do Rosa', 'Imbituba', 'SC', -28.1267, -48.6612, ARRAY['Sul','NE','Leste','SE'], ARRAY['Sul','NE'], 1, 5, 'low', 'high', 'intense', 1542, 21.0, 13.0),
+('Maresias', 'Sao Sebastiao', 'SP', -23.7889, -45.5312, ARRAY['Sul','SE'], ARRAY['Norte','Leste'], 1, 11, 'medium', 'high', 'intense', 243, 26.0, 18.0);
+
+---
+
+INSTRUÇÕES FINAIS PARA O MANUS:
+
+- Use TypeScript no backend (tipos para todas as rotas e modelos)
+- Valide todos os inputs com Zod ou Joi
+- Trate todos os erros com middleware global de erros
+- Use variáveis de ambiente para TODAS as credenciais — nunca hardcode
+- Escreva o código em português nos comentários e mensagens de erro
+- Gere o arquivo README.md com instruções de setup completo
+- Gere o ecosystem.config.js para PM2 com restart automático
+- Gere o script de migration SQL completo para rodar no PostgreSQL
+- Gere o script seed.sql com as 121 praias (vou fornecer o CSV)
+- Ao finalizar cada fase, mostre os endpoints funcionando com exemplos de curl
+
+COMECE PELA FASE 1: setup do backend + banco de dados + autenticação.
