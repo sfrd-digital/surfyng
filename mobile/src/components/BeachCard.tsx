@@ -4,6 +4,7 @@ import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radius, shadow, typography, scoreColor } from '../theme';
 import { DIFICULDADE_LABEL } from '../types';
+import { translateDirection } from '../utils/windDirection';
 import { ScoreBadge } from './ScoreBadge';
 import type { PraiaComDistancia } from '../types';
 
@@ -73,7 +74,7 @@ export function BeachCard({ praia, onPress, destaque = false }: Props) {
               <View style={styles.badge}>
                 <Ionicons name="navigate-outline" size={11} color={colors.accent} />
                 <Text style={styles.badgeText}>
-                  {condicoes.wind_speed} nós {condicoes.wind_direction ?? ''}
+                  {condicoes.wind_speed} nós{condicoes.wind_direction ? ` ${translateDirection(condicoes.wind_direction)}` : ''}
                 </Text>
               </View>
             )}

@@ -14,6 +14,7 @@ import { ConditionsCard } from '../../src/components/ConditionsCard';
 import { ScoreBadge } from '../../src/components/ScoreBadge';
 import { colors, spacing, typography, radius, scoreColor } from '../../src/theme';
 import { DIFICULDADE_LABEL } from '../../src/types';
+import { translateDirection } from '../../src/utils/windDirection';
 
 export default function BeachDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -237,7 +238,7 @@ export default function BeachDetailScreen() {
                   <View style={styles.direcaoTags}>
                     {praia.direcoes_swell.map(d => (
                       <View key={d} style={styles.tag}>
-                        <Text style={styles.tagTexto}>{d}</Text>
+                        <Text style={styles.tagTexto}>{translateDirection(d)}</Text>
                       </View>
                     ))}
                   </View>
@@ -249,7 +250,7 @@ export default function BeachDetailScreen() {
                   <View style={styles.direcaoTags}>
                     {praia.direcoes_vento.map(d => (
                       <View key={d} style={styles.tag}>
-                        <Text style={styles.tagTexto}>{d}</Text>
+                        <Text style={styles.tagTexto}>{translateDirection(d)}</Text>
                       </View>
                     ))}
                   </View>

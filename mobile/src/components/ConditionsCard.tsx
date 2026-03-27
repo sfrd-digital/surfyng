@@ -3,6 +3,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radius, typography } from '../theme';
+import { translateDirection } from '../utils/windDirection';
 import type { Condicoes } from '../types';
 
 interface Props {
@@ -46,7 +47,9 @@ export function ConditionsCard({ condicoes, compact = false }: Props) {
         <Item
           icon="water-outline"
           label="Ondulação"
-          value={swell_height != null ? `${alturaFt} ${alturaM} · ${swell_direction ?? 'N/D'}` : 'N/D'}
+          value={swell_height != null
+            ? `${alturaFt} ${alturaM} · ${swell_direction ? translateDirection(swell_direction) : 'N/D'}`
+            : 'N/D'}
         />
         <Item
           icon="time-outline"
@@ -57,7 +60,7 @@ export function ConditionsCard({ condicoes, compact = false }: Props) {
           icon="navigate-outline"
           label="Vento"
           value={wind_speed != null
-            ? `${wind_speed} nós · ${wind_direction ?? 'N/D'}`
+            ? `${wind_speed} nós · ${wind_direction ? translateDirection(wind_direction) : 'N/D'}`
             : 'N/D'}
         />
         {!compact && (

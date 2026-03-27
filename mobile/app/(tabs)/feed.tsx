@@ -12,6 +12,7 @@ import { useAuthStore } from '../../src/store/authStore';
 import { EmptyState } from '../../src/components/EmptyState';
 import { colors, spacing, typography, radius } from '../../src/theme';
 import { NIVEL_LABEL } from '../../src/types';
+import { translateDirection } from '../../src/utils/windDirection';
 import type { Post } from '../../src/types';
 
 // ─── Subcomponente: 5 estrelas de rating ─────────────────────────────────────
@@ -115,7 +116,7 @@ function PostCard({ post, onLike }: { post: Post; onLike: () => void }) {
             <View style={styles.condicaoItem}>
               <Ionicons name="navigate-outline" size={11} color={colors.accent} />
               <Text style={styles.condicaoTexto}>
-                {condicoes_snapshot.wind_speed} nós {condicoes_snapshot.wind_direction ?? ''}
+                {condicoes_snapshot.wind_speed} nós{condicoes_snapshot.wind_direction ? ` ${translateDirection(condicoes_snapshot.wind_direction)}` : ''}
               </Text>
             </View>
           )}
