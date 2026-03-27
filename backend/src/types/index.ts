@@ -42,7 +42,6 @@ export interface Beach {
   best_season: string | null;
   consistency: Consistency | null;
   crowd: CrowdLevel | null;
-  windguru_station_id: number | null;
   water_temp_summer_c: number | null;
   water_temp_winter_c: number | null;
   description: string | null;

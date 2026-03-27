@@ -21,7 +21,6 @@ const praiaBase: Beach = {
   best_season: 'Outono – Inverno',
   consistency: 'high',
   crowd: 'intense',
-  windguru_station_id: 64,
   water_temp_summer_c: 22,
   water_temp_winter_c: 14,
   description: null,

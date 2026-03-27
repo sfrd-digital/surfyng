@@ -1,6 +1,6 @@
 // Serviço de praias — scoring, recomendação de roupa e gerenciamento de cache de condições
 import { Beach, ConditionsCache, ColdTolerance } from '../types';
-import { WindConditions, buscarCondicoesWindguru } from './windguruService';
+import { WindConditions, buscarCondicoesOpenMeteo } from './weatherService';
 import { query, queryOne } from '../config/database';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -84,12 +84,12 @@ export function recomendarRoupa(
   return 'Wetsuit 5/4mm + capuz';
 }
 
-// Retorna temperatura da água baseada na estação do ano (fallback quando a API não fornece)
+// Retorna temperatura da água baseada na estação do ano conforme o hemisfério sul
+// Verão: dez–mar (meses 11,0,1,2)   |   Inverno: jun–set (meses 5,6,7,8)
 function tempAguaFallback(beach: Beach): number | null {
-  // Meses 4–9 (abril–setembro) = inverno no hemisfério sul
-  const mesAtual = new Date().getMonth(); // 0-based
-  const isInverno = mesAtual >= 3 && mesAtual <= 8;
-  return isInverno ? beach.water_temp_winter_c : beach.water_temp_summer_c;
+  const mes = new Date().getMonth(); // 0-based
+  const isVerao = mes === 11 || mes <= 2; // dez, jan, fev, mar
+  return isVerao ? beach.water_temp_summer_c : beach.water_temp_winter_c;
 }
 
 // Busca condições válidas do cache do banco (expira a cada 30 min)
@@ -117,19 +117,19 @@ export interface CondicoesProcessadas {
   cache_expira_em: Date;
 }
 
-// Busca condições da Windguru (com cache Redis) e persiste no banco.
+// Busca condições via Open-Meteo (com cache Redis) e persiste no banco.
+// Usa lat/lng da praia — sem necessidade de station_id externo.
 // Retorna as condições processadas ou null se não for possível obter.
 export async function buscarOuFetchCondicoes(
   beach: Beach,
   tolerancia: ColdTolerance = 'normal'
 ): Promise<CondicoesProcessadas | null> {
-  if (!beach.windguru_station_id) return null;
-
-  const condicoes = await buscarCondicoesWindguru(beach.windguru_station_id);
+  const condicoes = await buscarCondicoesOpenMeteo(beach.lat, beach.lng);
   if (!condicoes) return null;
 
   const score = calcularScore(beach, condicoes);
-  const tempAgua = condicoes.water_temp_c ?? tempAguaFallback(beach);
+  // Open-Meteo não fornece temperatura da água — usa o valor sazonal do banco
+  const tempAgua = tempAguaFallback(beach);
   const roupa = recomendarRoupa(tempAgua, tolerancia);
   const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutos
 

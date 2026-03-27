@@ -241,11 +241,7 @@ export async function atualizarCondicoes(
       throw createError('Praia não encontrada', 404);
     }
 
-    if (!praia.windguru_station_id) {
-      res.status(422).json({ error: 'Esta praia não possui integração com dados meteorológicos' });
-      return;
-    }
-
+    // Open-Meteo usa lat/lng — todas as praias com coordenadas têm suporte
     const condicoes = await buscarOuFetchCondicoes(praia, tolerancia);
     if (!condicoes) {
       res.status(503).json({ error: 'Não foi possível obter condições meteorológicas no momento' });
