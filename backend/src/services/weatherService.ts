@@ -69,17 +69,20 @@ export async function buscarCondicoesOpenMeteo(
   lat: number,
   lng: number
 ): Promise<WindConditions | null> {
+  const latNum = parseFloat(String(lat));
+  const lngNum = parseFloat(String(lng));
+
   // Chave de cache arredondada para 4 casas — evita miss por floating point
-  const chaveCache = `openmeteo:${lat.toFixed(4)}:${lng.toFixed(4)}`;
+  const chaveCache = `openmeteo:${latNum.toFixed(4)}:${lngNum.toFixed(4)}`;
 
   const cached = await getCache<WindConditions>(chaveCache);
   if (cached) {
-    console.log(`[OpenMeteo] Cache hit para ${lat},${lng}`);
+    console.log(`[OpenMeteo] Cache hit para ${latNum},${lngNum}`);
     return cached;
   }
 
   try {
-    console.log(`[OpenMeteo] Buscando condições para ${lat},${lng}`);
+    console.log(`[OpenMeteo] Buscando condições para ${latNum},${lngNum}`);
 
     // Chamadas em paralelo para reduzir latência total
     const [marineRes, weatherRes] = await Promise.all([
@@ -87,8 +90,8 @@ export async function buscarCondicoesOpenMeteo(
         'https://marine-api.open-meteo.com/v1/marine',
         {
           params: {
-            latitude: lat,
-            longitude: lng,
+            latitude: latNum,
+            longitude: lngNum,
             hourly: [
               'wave_height',
               'wave_direction',
@@ -109,8 +112,8 @@ export async function buscarCondicoesOpenMeteo(
         'https://api.open-meteo.com/v1/forecast',
         {
           params: {
-            latitude: lat,
-            longitude: lng,
+            latitude: latNum,
+            longitude: lngNum,
             current: 'temperature_2m,wind_speed_10m,wind_direction_10m',
             wind_speed_unit: 'kn',
             timezone: 'America/Sao_Paulo',
@@ -141,18 +144,18 @@ export async function buscarCondicoesOpenMeteo(
 
     // Salva no cache por 30 minutos
     await setCache(chaveCache, condicoes, CACHE_TTL_SECONDS);
-    console.log(`[OpenMeteo] Condições salvas no cache para ${lat},${lng}`);
+    console.log(`[OpenMeteo] Condições salvas no cache para ${latNum},${lngNum}`);
 
     return condicoes;
   } catch (err) {
     if (axios.isAxiosError(err)) {
       console.error(
-        `[OpenMeteo] Erro na requisição para ${lat},${lng}:`,
+        `[OpenMeteo] Erro na requisição para ${latNum},${lngNum}:`,
         err.response?.status,
         err.message
       );
     } else {
-      console.error(`[OpenMeteo] Erro inesperado para ${lat},${lng}:`, err);
+      console.error(`[OpenMeteo] Erro inesperado para ${latNum},${lngNum}:`, err);
     }
     return null;
   }
