@@ -84,44 +84,45 @@ export async function buscarCondicoesOpenMeteo(
   try {
     console.log(`[OpenMeteo] Buscando condições para ${latNum},${lngNum}`);
 
-    // Chamadas em paralelo para reduzir latência total
-    const [marineRes, weatherRes] = await Promise.all([
-      axios.get<MarineResponse>(
-        'https://marine-api.open-meteo.com/v1/marine',
-        {
-          params: {
-            latitude: latNum,
-            longitude: lngNum,
-            hourly: [
-              'wave_height',
-              'wave_direction',
-              'wave_period',
-              'swell_wave_height',
-              'swell_wave_direction',
-              'swell_wave_period',
-              'wind_wave_height',
-              'wind_wave_direction',
-            ].join(','),
-            wind_speed_unit: 'kn',
-            timezone: 'America/Sao_Paulo',
-          },
-          timeout: 10000,
-        }
-      ),
-      axios.get<WeatherResponse>(
-        'https://api.open-meteo.com/v1/forecast',
-        {
-          params: {
-            latitude: latNum,
-            longitude: lngNum,
-            current: 'temperature_2m,wind_speed_10m,wind_direction_10m',
-            wind_speed_unit: 'kn',
-            timezone: 'America/Sao_Paulo',
-          },
-          timeout: 10000,
-        }
-      ),
-    ]);
+    // Chamadas sequenciais com delay para evitar erro 429 (rate limit Open-Meteo)
+    const marineRes = await axios.get<MarineResponse>(
+      'https://marine-api.open-meteo.com/v1/marine',
+      {
+        params: {
+          latitude: latNum,
+          longitude: lngNum,
+          hourly: [
+            'wave_height',
+            'wave_direction',
+            'wave_period',
+            'swell_wave_height',
+            'swell_wave_direction',
+            'swell_wave_period',
+            'wind_wave_height',
+            'wind_wave_direction',
+          ].join(','),
+          wind_speed_unit: 'kn',
+          timezone: 'America/Sao_Paulo',
+        },
+        timeout: 10000,
+      }
+    );
+
+    await new Promise(r => setTimeout(r, 200));
+
+    const weatherRes = await axios.get<WeatherResponse>(
+      'https://api.open-meteo.com/v1/forecast',
+      {
+        params: {
+          latitude: latNum,
+          longitude: lngNum,
+          current: 'temperature_2m,wind_speed_10m,wind_direction_10m',
+          wind_speed_unit: 'kn',
+          timezone: 'America/Sao_Paulo',
+        },
+        timeout: 10000,
+      }
+    );
 
     const hourly  = marineRes.data?.hourly;
     const current = weatherRes.data?.current;

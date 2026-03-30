@@ -148,7 +148,7 @@ export async function buscarOuFetchCondicoes(
       condicoes.wind_direction,
       condicoes.swell_height,
       condicoes.swell_direction,
-      condicoes.swell_period,
+      condicoes.swell_period !== null ? Math.round(condicoes.swell_period) : null,
       tempAgua,
       condicoes.air_temp_c,
       roupa,
