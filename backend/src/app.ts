@@ -13,6 +13,8 @@ import alertsRoutes from './routes/alerts';
 import notificationsRoutes from './routes/notifications';
 import stripeRoutes from './routes/stripe';
 import webhooksRoutes from './routes/webhooks';
+// ⚠️  REMOVER ANTES DE IR PARA PRODUÇÃO
+import testRoutes from './routes/test';
 import { errorHandler } from './middleware/errorHandler';
 import { pool } from './config/database';
 import { redis } from './config/redis';
@@ -44,6 +46,8 @@ app.use('/api/v1/alerts', alertsRoutes);
 app.use('/api/v1/notifications', notificationsRoutes);
 app.use('/api/v1/stripe', stripeRoutes);
 app.use('/api/v1/webhooks', webhooksRoutes);
+// ⚠️  REMOVER ANTES DE IR PARA PRODUÇÃO
+app.use('/api/v1/test', testRoutes);
 
 // Middleware global de erros (deve ser o último)
 app.use(errorHandler);
