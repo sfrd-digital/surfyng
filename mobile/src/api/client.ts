@@ -2,9 +2,10 @@
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 
-// Em dev, use http://10.0.2.2:3000 no Android Emulator ou http://localhost:3000 no iOS Simulator
+// Em dev, defina EXPO_PUBLIC_API_URL=http://localhost:3000/api/v1 no .env local.
+// O fallback aponta para produção para garantir que builds sem variável de ambiente funcionem.
 export const api = axios.create({
-  baseURL:         process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000/api/v1',
+  baseURL:         process.env.EXPO_PUBLIC_API_URL ?? 'https://api.surfyng.app/api/v1',
   timeout:         15_000,
   headers: {
     'Content-Type': 'application/json',
