@@ -1,12 +1,7 @@
 // MapScreen — mapa interativo com pins coloridos por score
 import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, Pressable, ActivityIndicator, Platform } from 'react-native';
-// react-native-maps não é importado estaticamente — carregado apenas fora da web
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let MapView: any, Marker: any, Callout: any;
-if (Platform.OS !== 'web') {
-  ({ default: MapView, Marker, Callout } = require('react-native-maps'));
-}
+import { View, Text, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
+import MapView, { Marker, Callout, Region } from 'react-native-maps';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,16 +11,8 @@ import { colors, spacing, typography, radius, scoreColor } from '../../src/theme
 import type { PraiaComDistancia } from '../../src/types';
 
 export default function MapScreen() {
-  if (Platform.OS === 'web') {
-    return (
-      <View style={styles.centrado}>
-        <Text style={typography.body}>Mapa disponível apenas no app mobile</Text>
-      </View>
-    );
-  }
-
   const { localizacao, carregando, erro, recarregar } = useLocation();
-  const mapRef = useRef<any>(null);
+  const mapRef = useRef<MapView>(null);
 
   const { data: nearbyData, isLoading } = useQuery({
     queryKey: ['beaches-nearby-map', localizacao?.latitude, localizacao?.longitude],
@@ -69,7 +56,7 @@ export default function MapScreen() {
     );
   }
 
-  const regiaoInicial = {
+  const regiaoInicial: Region = {
     latitude:       localizacao.latitude,
     longitude:      localizacao.longitude,
     latitudeDelta:  1.0,
