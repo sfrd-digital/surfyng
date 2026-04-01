@@ -5,10 +5,8 @@ import {
   ActivityIndicator, Alert, Switch,
 } from 'react-native';
 import { router } from 'expo-router';
-import { signOut } from 'firebase/auth';
 import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { firebaseAuth } from '../../src/config/firebase';
 import { useAuthStore } from '../../src/store/authStore';
 import { updateMe } from '../../src/api/users';
 import { colors, spacing, typography, radius } from '../../src/theme';
@@ -35,7 +33,9 @@ export default function ProfileScreen() {
         text: 'Sair',
         style: 'destructive',
         onPress: async () => {
-          await signOut(firebaseAuth);
+          const { signOut, getAuth } = await import('firebase/auth');
+          const { default: app } = await import('../../src/config/firebaseApp');
+          await signOut(getAuth(app));
           qc.clear();
           clear();
           router.replace('/(auth)/login');

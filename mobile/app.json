@@ -10,9 +10,11 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#041E2C"
+      "backgroundColor": "#023246"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "bundleIdentifier": "com.surfyng.app",
       "supportsTablet": false,
@@ -20,21 +22,23 @@
         "NSLocationWhenInUseUsageDescription": "O Surfyng usa sua localização para encontrar as praias mais próximas com as melhores condições de surf agora.",
         "NSLocationAlwaysUsageDescription": "O Surfyng usa sua localização para alertas em segundo plano.",
         "NSCameraUsageDescription": "Para tirar fotos das suas sessões de surf.",
-        "NSPhotoLibraryUsageDescription": "Para selecionar fotos das suas sessões de surf."
+        "NSPhotoLibraryUsageDescription": "Para selecionar fotos das suas sessões de surf.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "package": "com.surfyng.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#041E2C"
+        "backgroundColor": "#023246"
       },
       "permissions": [
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION",
-        "CAMERA",
-        "READ_MEDIA_IMAGES",
-        "POST_NOTIFICATIONS"
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.CAMERA",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
@@ -57,13 +61,20 @@
       [
         "expo-build-properties",
         {
-          "ios": { "useFrameworks": "static" },
-          "android": { "compileSdkVersion": 34 }
+          "android": {
+            "compileSdkVersion": 34
+          }
         }
       ]
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "2063305d-f115-4f47-af8f-519f75ffb6d6"
+      }
     }
   }
 }

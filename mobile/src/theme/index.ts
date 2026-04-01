@@ -1,15 +1,26 @@
 // Tema visual do Surfyng — dark mode, paleta oceânica
 import { Platform } from 'react-native';
 
+export const fonts = {
+  bold:         'GothamRounded-Bold',
+  boldItalic:   'GothamRounded-BoldItalic',
+  book:         'GothamRounded-Book',
+  bookItalic:   'GothamRounded-BookItalic',
+  light:        'GothamRounded-Light',
+  lightItalic:  'GothamRounded-LightItalic',
+  medium:       'GothamRounded-Medium',
+  mediumItalic: 'GothamRounded-MediumItalic',
+};
+
 export const colors = {
   // Backgrounds
-  bg:           '#041E2C',
-  bgCard:       '#062736',
-  bgCardAlt:    '#083245',
+  bg:           '#023246',
+  bgCard:       '#073D56',
+  bgCardAlt:    '#0A4F6E',
 
   // Marca
   primary:  '#0A4F6E',
-  accent:   '#22D3EE',
+  accent:   '#00D4FF',
 
   // Semânticas
   success:  '#059669',
@@ -17,13 +28,13 @@ export const colors = {
   danger:   '#DC2626',
 
   // Texto
-  textPrimary:   '#F0F9FF',
-  textSecondary: 'rgba(240,249,255,0.55)',
-  textMuted:     'rgba(240,249,255,0.35)',
+  textPrimary:   '#FFFFFF',
+  textSecondary: 'rgba(255,255,255,0.55)',
+  textMuted:     'rgba(255,255,255,0.35)',
 
   // Bordas
   border:      'rgba(10,79,110,0.35)',
-  borderLight: 'rgba(34,211,238,0.15)',
+  borderLight: 'rgba(0,212,255,0.15)',
 };
 
 export const spacing = {
@@ -44,12 +55,12 @@ export const radius = {
 };
 
 export const typography = {
-  h1:    { fontSize: 28, fontWeight: '700' as const, color: colors.textPrimary },
-  h2:    { fontSize: 22, fontWeight: '700' as const, color: colors.textPrimary },
-  h3:    { fontSize: 18, fontWeight: '600' as const, color: colors.textPrimary },
-  body:  { fontSize: 15, fontWeight: '400' as const, color: colors.textPrimary },
-  small: { fontSize: 13, fontWeight: '400' as const, color: colors.textSecondary },
-  tiny:  { fontSize: 11, fontWeight: '400' as const, color: colors.textMuted },
+  h1:    { fontSize: 28, fontFamily: fonts.bold,   color: colors.textPrimary },
+  h2:    { fontSize: 22, fontFamily: fonts.bold,   color: colors.textPrimary },
+  h3:    { fontSize: 18, fontFamily: fonts.medium, color: colors.textPrimary },
+  body:  { fontSize: 15, fontFamily: fonts.book,   color: colors.textPrimary },
+  small: { fontSize: 13, fontFamily: fonts.light,  color: colors.textSecondary },
+  tiny:  { fontSize: 11, fontFamily: fonts.light,  color: colors.textMuted },
   mono:  { fontSize: 14, fontFamily: Platform.OS === 'ios' ? 'Courier New' : 'monospace', color: colors.textPrimary },
 };
 

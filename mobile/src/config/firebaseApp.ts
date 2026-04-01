@@ -1,5 +1,4 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth, inMemoryPersistence, setPersistence } from 'firebase/auth';
 
 const firebaseConfig = {
   apiKey:            process.env.EXPO_PUBLIC_FIREBASE_API_KEY!,
@@ -11,10 +10,4 @@ const firebaseConfig = {
 };
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-
-export const firebaseAuth = getAuth(app);
-
-// Expo Go não suporta AsyncStorage persistence — usa memória
-setPersistence(firebaseAuth, inMemoryPersistence);
-
 export default app;
